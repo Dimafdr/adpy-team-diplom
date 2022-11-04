@@ -2,65 +2,105 @@ import sqlalchemy as sq
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-
+from datetime import datetime
 
 Base = declarative_base()
 
-class Users:
+
+class Users(Base):
     __tablename__ = "users"
-    # объявление таблицы users
+    user_id = sq.Column(sq.Integer, primary_key=True)
     # - Id (из VK)
+    vk_id = sq.Column(sq.Integer)
     # - Имя
+    name = sq.Column(sq.String)
     # - Возраст
+    age = sq.Column(sq.Integer)
     # - Пол
+    gender = sq.Column(sq.Integer)
     # - Город
+    city = sq.Column(sq.String)
+    relationlist = relationship('RelationList', back_populates='user')
 
 
-class Сhallengers:
+class Сhallengers(Base):
     __tablename__ = "challengers"
+    challengers_id = sq.Column(sq.Integer, primary_key=True)
     # объявление таблицы challengers
     # - Id (из VK)
+    vk_id = sq.Column(sq.Integer)
     # - Имя
+    name = sq.Column(sq.String)
     # -  Фамилия
+    last_name = sq.Column(sq.String)
     # - Ссылка на профиль
+    link_profile = sq.Column(sq.String)
+    relationlist = relationship('RelationList', back_populates='challenger')
 
-
-class RelationList:
+class RelationList(Base):
     __tablename__ = "relation_lists"
+    relationlist_id = sq.Column(sq.Integer, primary_key=True)
     # объявление таблицы relation_lists
     # - id_user (ссылка на users)
     # - Id_challenger (ссылка на challengers)
     # - Дата внесения записи
+    date_added = sq.Column(sq.String)
     # - Наличие в избранном (логический тип)
+    favorites = sq.Column(sq.Boolean)
     # - Наличие в черном списке
+    black_list = sq.Column(sq.Boolean)
+    user_id = sq.Column(sq.Integer, sq.ForeignKey('users.user_id'), nullable=False)
+    user = relationship('Users', back_populates='relationlist')
+    challengers_id = sq.Column(sq.Integer, sq.ForeignKey('challengers.challengers_id'), nullable=False)
+    challenger = relationship('Сhallengers', back_populates='relationlist')
 
 
-def create_tables(engine):
-    pass
-    # создаются все таблицы
+def insert_challenger(id_challenger, name_challenger, surname_challenger, link):
+    new_challenger = Сhallengers(vk_id=id_challenger, name= name_challenger, last_name=surname_challenger, link_profile=link)
+    # не успела
+    # new_relationList = RelationList(date_added=datetime.now().date(), )
+    session.add(new_challenger)
+    session.commit()
+    # Загружает информацию о кандидате в таблицу challengers
 
     # return True/False
+
+def create_tables(engine):
+    # создаются все таблицы
+    Base.metadata.create_all(engine)
+    # return True/False
+    try:
+        Base.metadata.create_all(engine)
+        return True
+    except:
+        return False
 
 
 def connect(localhost, user, pwd):
-    pass
     # Создет новое соединение
-
+    engine = sq.create_engine(f"postgresql://postgres:{pwd}@localhost:{localhost}/{user}")
+    create_tables(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
     # return экземпляр класса Session
+    return session
+
+
+session = connect(localhost="5432", pwd="5240", user="users")
 
 
 def select_date_from_table(connect, table_name):
-    pass
     # Получает данные из таблицы table_name
-
     # return список
+    return connect.query(table_name).all()
 
 
-def insert_user(id_user, name_user, sex_user, age_user, city_user):
-    pass
+def insert_user(vk_id, name_user, sex_user, age_user, city_user):
     # Загружает данные в таблицу user
-
-    # return True/False
+    user = Users(vk_id=vk_id, name=name_user, age=age_user, gender=sex_user, city=city_user)
+    session.add(user)
+    session.commit()
+    return user.user_id
 
 
 def check_user(id_user):
@@ -78,11 +118,6 @@ def check_and_update_param_user(id_user, name_user, sex_user, age_user, city_use
     # return [id_user, name_user, sex_user, age_user, city_user]
 
 
-def insert_challenger(id_challenger, name_challenger, surname_challenger, link):
-    pass
-    # Загружает информацию о кандидате в таблицу challengers
-
-    # return True/False
 
 
 def check_challenger(id_challenger):
